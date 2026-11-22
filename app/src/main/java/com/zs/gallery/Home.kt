@@ -30,6 +30,17 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.material.icons.outlined.FolderCopy
+import androidx.compose.material.icons.outlined.PhotoCamera
+import androidx.compose.material.icons.outlined.PhotoLibrary
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -377,6 +388,43 @@ private val navGraphBuilder: NavGraphBuilder.() -> Unit = {
     }
 }
 
+// Форк: размеры компактной нижней панели.
+private val BAR_HEIGHT = 56.dp
+private val ITEM_HEIGHT = 44.dp
+private val ITEM_WIDTH = 60.dp
+private val ICON_SIZE = 22.dp
+
+/** Иконка раздела в нижней капсуле: без подписи, выбранная подсвечивается акцентом. */
+@Composable
+private fun BarItem(
+    icon: ImageVector,
+    label: String,
+    selected: Boolean,
+    selectedBg: Color,
+    selectedFg: Color,
+    idleBg: Color,
+    idleFg: Color,
+    onClick: () -> Unit,
+) {
+    val bg by animateColorAsState(if (selected) selectedBg else idleBg, label = "bar_item_bg")
+    val fg by animateColorAsState(if (selected) selectedFg else idleFg, label = "bar_item_fg")
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .size(width = ITEM_WIDTH, height = ITEM_HEIGHT)
+            .clip(CircleShape)
+            .background(bg)
+            .selectable(selected = selected, role = Role.Tab, onClick = onClick)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = label,
+            tint = fg,
+            modifier = Modifier.size(ICON_SIZE)
+        )
+    }
+}
+
 /**
  * A composable function that represents a navigation bar, combining both rail and bottom bar elements.
  *
@@ -444,39 +492,98 @@ private fun NavigationBar(
     }
     // Load appropriate navigation bar.
     when {
+        // Форк: компактная нижняя панель в стиле Telegram —
+        // капсула с иконками разделов и круглая кнопка камеры одинаковой высоты.
         true -> Row(
             modifier = Modifier
                 .windowInsetsPadding(
-                    AppBarDefaults.bottomAppBarWindowInsets.union(WindowInsets(bottom = 16.dp)).add(WindowInsets(bottom = 10.dp)),
+                    AppBarDefaults.bottomAppBarWindowInsets.union(WindowInsets(bottom = 12.dp)),
                 )
                 .fillMaxWidth()
                 .padding(horizontal = ContentPadding.large),
             verticalAlignment = Alignment.CenterVertically,
-            // Форк: нижние кнопки по центру экрана.
-            horizontalArrangement = Arrangement.spacedBy(ContentPadding.normal, alignment = Alignment.CenterHorizontally)) {
-            Surface (
+            horizontalArrangement = Arrangement.spacedBy(10.dp, alignment = Alignment.CenterHorizontally)
+        ) {
+            val primary by navController.primary
+            // В режиме «акцентной» панели цвета берутся от contentColor.
+            val accentBar = contentColor == colors.onAccent
+            val selectedBg = if (accentBar) contentColor.copy(alpha = 0.22f) else colors.accent
+            val selectedFg = if (accentBar) contentColor else colors.onAccent
+            val idleBg = contentColor.copy(alpha = 0.07f)
+
+            // Капсула с разделами
+            Surface(
                 contentColor = contentColor,
                 background = background,
                 elevation = 12.dp,
                 border = colors.shine,
-                shape = AppTheme.shapes.xLarge,
-                content = { Row(modifier = Modifier.padding(horizontal = ContentPadding.normal)) { routes() } },   // Display routes at the contre of available space
+                shape = CircleShape,
+                content = {
+                    Row(
+                        modifier = Modifier
+                            .height(BAR_HEIGHT)
+                            .padding(horizontal = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        val onFiles = primary == RouteFiles.domain
+                        BarItem(
+                            icon = if (onFiles) Icons.Filled.PhotoLibrary else Icons.Outlined.PhotoLibrary,
+                            label = stringResource(R.string.timeline),
+                            selected = onFiles,
+                            selectedBg = selectedBg,
+                            selectedFg = selectedFg,
+                            idleBg = idleBg,
+                            idleFg = contentColor,
+                            onClick = { navController.toRoute(RouteFiles) }
+                        )
+                        val onFolders = primary == RouteFolders.domain
+                        BarItem(
+                            icon = if (onFolders) Icons.Filled.FolderCopy else Icons.Outlined.FolderCopy,
+                            label = stringResource(R.string.folders),
+                            selected = onFolders,
+                            selectedBg = selectedBg,
+                            selectedFg = selectedFg,
+                            idleBg = idleBg,
+                            idleFg = contentColor,
+                            onClick = { navController.toRoute(RouteFolders) }
+                        )
+                    }
+                },
             )
 
-            FloatingActionButton(
+            // Круглая кнопка камеры — тот же фон, рамка и высота, что у капсулы.
+            Surface(
+                contentColor = contentColor,
+                background = background,
+                elevation = 12.dp,
+                border = colors.shine,
+                shape = CircleShape,
                 content = {
-                    Icon(imageVector = Icons.Filled.Camera, contentDescription = null)
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(BAR_HEIGHT)
+                            .clip(CircleShape)
+                            .clickable(role = Role.Button) {
+                                val intent = Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA) {
+                                    // Ensures the intent opens in a new independent task
+                                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                }
+                                // Verify that a camera app exists on the device before launching
+                                if (intent.resolveActivity((facade as Context).packageManager) != null) {
+                                    facade.launch(intent)
+                                }
+                            }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.PhotoCamera,
+                            contentDescription = null,
+                            tint = contentColor,
+                            modifier = Modifier.size(ICON_SIZE)
+                        )
+                    }
                 },
-                onClick = {
-                    val intent = Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA){
-                        // Ensures the intent opens in a new independent task
-                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                    }
-                    // Verify that a camera app exists on the device before launching
-                    if (intent.resolveActivity((facade as Context).packageManager) != null) {
-                        facade.launch(intent)
-                    }
-                }
             )
         }
 
