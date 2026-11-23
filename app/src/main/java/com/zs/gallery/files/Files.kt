@@ -56,7 +56,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.zs.compose.foundation.findActivity
-import com.zs.compose.foundation.stickyHeader
+import com.zs.compose.foundation.fullLineSpan
 import com.zs.compose.theme.AppTheme
 import com.zs.compose.theme.Icon
 import com.zs.compose.theme.IconButton
@@ -223,7 +223,8 @@ fun Files(viewState: FilesViewState) {
                 for ((header, items) in data) {
                     // Selection level of the group.
                     val level by viewState.isGroupSelected(header.toString())
-                    stickyHeader(state, key = header, contentType = "header") {
+                    // Форк: обычный (не «липкий») заголовок с датой — без прыжков при прокрутке.
+                    item(key = header, contentType = "header", span = fullLineSpan) {
                         Row(
                             Modifier.padding(HeaderPadding),
                             horizontalArrangement = Arrangement.SpaceBetween,

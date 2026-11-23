@@ -49,7 +49,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.zs.compose.foundation.fullLineSpan
 import androidx.compose.foundation.layout.plus
-import com.zs.compose.foundation.stickyHeader
 import com.zs.compose.theme.AppTheme
 import com.zs.compose.theme.Icon
 import com.zs.compose.theme.LocalWindowSize
@@ -175,10 +174,11 @@ fun Folders(viewState: FoldersViewState) {
                 // Actual content
                 for ((header, items) in data) {
                     if (header.isNotEmpty())
-                        stickyHeader(
-                            state,
-                            header,
+                        // Форк: обычный заголовок вместо «липкого» — без прыжков.
+                        item(
+                            key = header,
                             contentType = "header",
+                            span = fullLineSpan,
                             content = {
                                 Box(
                                     modifier = Modifier
