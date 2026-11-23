@@ -305,14 +305,11 @@ class FilesViewModel(
                     }.toString()
                 }
         //
-        else
-            values.groupBy {
-                DateUtils.getRelativeTimeSpanString(
-                    it.dateModified,
-                    System.currentTimeMillis(),
-                    DateUtils.DAY_IN_MILLIS
-                ).toString()
-            }
+        else {
+            // Форк: вместо «Сегодня/Вчера» показываем дату, например «23 ноября 2026».
+            val format = java.text.SimpleDateFormat("d MMMM yyyy", java.util.Locale.forLanguageTag("ru"))
+            values.groupBy { format.format(java.util.Date(it.dateModified)) }
+        }
     }
 
     init {

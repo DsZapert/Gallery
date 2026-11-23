@@ -96,7 +96,11 @@ class FoldersViewModel(provider: MediaProvider) : KoinViewModel(), FoldersViewSt
 
             ORDER_BY_DATE_MODIFIED -> folders.sortedBy { it.lastModified }
                 .let { if (ascending) it else it.reversed() }
-                .groupBy { DateUtils.getRelativeTimeSpanString(it.lastModified).toString() }
+                .let { list ->
+                    // Форк: дата вместо «Вчера» и т. п.
+                    val format = java.text.SimpleDateFormat("d MMMM yyyy", java.util.Locale.forLanguageTag("ru"))
+                    list.groupBy { format.format(java.util.Date(it.lastModified)) }
+                }
 
             else -> error("Oops invalid id passed $order")
         }

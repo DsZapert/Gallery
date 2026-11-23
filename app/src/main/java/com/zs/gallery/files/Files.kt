@@ -139,7 +139,6 @@ fun Files(viewState: FilesViewState) {
                 insets = WindowInsets.systemBars.only(WindowInsetsSides.Top),
                 scrollBehavior = topAppBarScrollBehavior,
                 navigationIcon = {
-                    val facade = LocalSystemFacade.current
                     when {
                         icon != null -> Icon(
                             imageVector = icon,
@@ -147,12 +146,8 @@ fun Files(viewState: FilesViewState) {
                             modifier = Modifier.minimumInteractiveComponentSize(),
                         )
 
-                        else -> Icon(
-                            ImageVector.Drawable(R.drawable.ic_app),
-                            contentDescription = null,
-                            tint = Color.Unspecified,
-                            modifier = Modifier.minimumInteractiveComponentSize(),
-                        )
+                        // Форк: иконка приложения в углу убрана.
+                        else -> Unit
                     }
                 },
                 actions = {
@@ -206,7 +201,8 @@ fun Files(viewState: FilesViewState) {
                         actions,
                         onItemClicked = { viewState.onRequest(it, ctx.findActivity()) },
                         collapsed = 4,
-                        compact = true
+                        compact = true,
+                        large = true
                     )
                 }
             )

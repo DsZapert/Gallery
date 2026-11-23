@@ -59,7 +59,7 @@ import java.util.Date
 import java.util.Locale
 
 private val formatter
-    get() = SimpleDateFormat("EEE, dd MMM yyyy, h:mm aa", Locale.getDefault())
+    get() = SimpleDateFormat("EEE, d MMM yyyy, HH:mm", Locale.forLanguageTag("ru"))
 
 private val MediaFile.megapixels
     get() = if (width > 0 && height > 0) (width * height) / 1_000_000f else -1f

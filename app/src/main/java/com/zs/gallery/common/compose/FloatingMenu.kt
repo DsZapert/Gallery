@@ -25,6 +25,9 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.ui.semantics.Role
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.indication
@@ -75,6 +78,10 @@ import com.zs.compose.theme.text.Label
 import com.zs.gallery.common.Action
 
 
+// Форк: размер крупных кнопок в нижних панелях (просмотр, выделение).
+val LARGE_BUTTON_SIZE = 52.dp
+val LARGE_ICON_SIZE = 26.dp
+
 @Composable
 @NonRestartableComposable
 fun FloatingActionMenu(
@@ -101,10 +108,10 @@ fun FloatingActionMenu(
                 border = border,
                 content = {
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(2.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         content = content,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp).animateContentSize(motion.fastSpatialSpec())
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp).animateContentSize(motion.fastSpatialSpec())
                     )
                 }
             )
@@ -165,7 +172,8 @@ inline fun RowScope.OverflowMenu(
     noinline onItemClicked: (item: Action) -> Unit,
     collapsed: Int = 2,
     expanded: Int = -1,
-    compact: Boolean = false
+    compact: Boolean = false,
+    large: Boolean = false, // Форк: крупные кнопки для нижних панелей
 ) {
     val size = items.size
     if (size == 0) return // Nothing to render
@@ -174,6 +182,25 @@ inline fun RowScope.OverflowMenu(
     repeat(minOf(size, collapsed)) { index ->
         val item = items[index]
         when{
+            large -> {
+                val tint = LocalContentColor.current
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(LARGE_BUTTON_SIZE)
+                        .clip(CircleShape)
+                        .background(AppTheme.colors.accent.copy(alpha = 0.16f))
+                        .clickable(enabled = item.enabled, role = Role.Button) { onItemClicked(item) }
+                ) {
+                    Icon(
+                        imageVector = item.icon ?: Icons.Outlined.BrokenImage,
+                        contentDescription = stringResource(item.label),
+                        tint = if (item.enabled) tint else tint.copy(alpha = 0.38f),
+                        modifier = Modifier.size(LARGE_ICON_SIZE)
+                    )
+                }
+            }
+
             compact -> TonalIconButton(
                 icon = item.icon ?: Icons.Outlined.BrokenImage, // Fallback for missing icons
                 onClick = { onItemClicked(item) },
@@ -222,16 +249,7 @@ inline fun RowScope.OverflowMenu(
     // Dropdown menu toggle state
     val (show, onDismissRequest) = remember { mutableStateOf(false) }
 
-    // "More" button to toggle dropdown visibility
-    IconToggleButton(checked = show, onCheckedChange = { onDismissRequest(it) }) {
-        Surface(color = AppTheme.colors.accent, shape = AppTheme.shapes.small) {
-            Icon(
-                Icons.Outlined.MoreVert,
-                contentDescription = "More actions",
-                modifier = Modifier.padding(vertical = 4.dp)
-            )
-        }
-
+    val dropdown: @Composable () -> Unit = {
         // DropdownMenu: shows remaining items beyond the collapsed count
         DropDownMenu(
             expanded = show,
@@ -328,6 +346,39 @@ inline fun RowScope.OverflowMenu(
                     }
                 }
             }
+        }
+    }
+
+    // "More" button to toggle dropdown visibility
+    if (large) {
+        Box {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .size(LARGE_BUTTON_SIZE)
+                    .clip(CircleShape)
+                    .background(AppTheme.colors.accent)
+                    .clickable(role = Role.Button) { onDismissRequest(!show) }
+            ) {
+                Icon(
+                    Icons.Outlined.MoreVert,
+                    contentDescription = "Ещё",
+                    tint = AppTheme.colors.onAccent,
+                    modifier = Modifier.size(LARGE_ICON_SIZE)
+                )
+            }
+            dropdown()
+        }
+    } else {
+        IconToggleButton(checked = show, onCheckedChange = { onDismissRequest(it) }) {
+            Surface(color = AppTheme.colors.accent, shape = AppTheme.shapes.small) {
+                Icon(
+                    Icons.Outlined.MoreVert,
+                    contentDescription = "More actions",
+                    modifier = Modifier.padding(vertical = 4.dp)
+                )
+            }
+            dropdown()
         }
     }
 }

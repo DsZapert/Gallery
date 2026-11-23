@@ -321,7 +321,8 @@ fun MediaViewer(viewState: MediaViewerViewState) {
                         actions,
                         onItemClicked = { viewState.onPerformAction(it, ctx.findActivity()) },
                         collapsed = 4,
-                        compact = true
+                        compact = true,
+                        large = true
                     )
                 }
             )
